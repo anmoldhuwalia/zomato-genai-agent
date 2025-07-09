@@ -1,0 +1,25 @@
+{
+    "restaurant_name": "Biryani Express",
+    "cuisine": "Hyderabadi",
+    "location": "Hyderabad",
+    "menu": [
+      {
+        "item": "Mutton Biryani",
+        "price": 320,
+        "calories": 700,
+        "description": "Spicy layered rice with tender mutton pieces"
+      },
+      {
+        "item": "Chicken 65",
+        "price": 180,
+        "calories": 450,
+        "description": "Fried spicy chicken starter"
+      },
+      {
+        "item": "Mirchi Ka Salan",
+        "price": 80,
+        "calories": 200,
+        "description": "Chili pepper curry served with biryani"
+      }
+    ]
+  }

@@ -10,14 +10,14 @@ from langchain.embeddings import OpenAIEmbeddings
 from langchain.chains import RetrievalQA
 
 # ✅ Load embeddings with secure key
-embeddings = OpenAIEmbeddings(openai_api_key=st.secrets["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"])
+embeddings = OpenAIEmbeddings(openai_api_key=st.secrets["OPENAI_API_KEY"])
 
 # ✅ Load FAISS vector DB
 db = FAISS.load_local("vector_db", embeddings)
 
 # ✅ Setup LangChain retriever chain
 retriever = RetrievalQA.from_chain_type(
-    llm=ChatOpenAI(openai_api_key=st.secrets["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"]),
+    llm=ChatOpenAI(openai_api_key=st.secrets["OPENAI_API_KEY"]),
     chain_type="stuff",
     retriever=db.as_retriever()
 )
@@ -49,7 +49,7 @@ tools = [
 ]
 
 # ✅ Initialize LLM agent
-llm = ChatOpenAI(temperature=0, openai_api_key=st.secrets["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"])
+llm = ChatOpenAI(temperature=0, openai_api_key=st.secrets["OPENAI_API_KEY"])
 agent = initialize_agent(tools, llm, agent_type="zero-shot-react-description")
 
 # ----------------------------

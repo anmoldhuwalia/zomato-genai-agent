@@ -1,39 +1,72 @@
-import re, json, os
+import streamlit as st
+import re
+import os
+import json
 from langchain.chat_models import ChatOpenAI
 from langchain.tools import Tool
 from langchain.agents import initialize_agent
 from langchain.vectorstores import FAISS
+from langchain.embeddings import OpenAIEmbeddings
 from langchain.chains import RetrievalQA
 
-# Load vector DB
-db = FAISS.load_local("vector_db", OpenAIEmbeddings())
+# ✅ Load embeddings with secure key
+embeddings = OpenAIEmbeddings(openai_api_key=st.secrets["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"])
 
-# Tools
-def detect_intent(inp):
-    if m := re.search(r"(cancel|add|track) order\s*#?(\d+)", inp.lower()):
-        action, oid = m.groups()
-        return action, oid
+# ✅ Load FAISS vector DB
+db = FAISS.load_local("vector_db", embeddings)
+
+# ✅ Setup LangChain retriever chain
+retriever = RetrievalQA.from_chain_type(
+    llm=ChatOpenAI(openai_api_key=st.secrets["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"]),
+    chain_type="stuff",
+    retriever=db.as_retriever()
+)
+
+# ----------------------------
+# 🔧 Define mock workflow tools
+# ----------------------------
+
+def detect_intent(user_input):
+    if match := re.search(r"(cancel|add|track).+order\s*#?(\d+)", user_input.lower()):
+        action, order_id = match.groups()
+        return action, order_id
     return "faq", None
 
-def cancel_order(order_id): return f"✅ Order #{order_id} canceled!"
-def track_order(order_id): return f"🚚 Order #{order_id} is out for delivery."
-def add_item(order_id, item): return f"🍟 Added *{item}* to order #{order_id}."
+def cancel_order(order_id):
+    return f"✅ Order #{order_id} has been successfully canceled."
 
+def track_order(order_id):
+    return f"📦 Order #{order_id} is out for delivery and will arrive soon."
+
+def add_item(order_id, item="Fries"):
+    return f"🍟 {item} has been added to Order #{order_id}."
+
+# ✅ LangChain tool wrappers (optional for agent)
 tools = [
-    Tool.from_function(func=cancel_order, name="cancel_order", description="Cancels an order"),
-    Tool.from_function(func=track_order, name="track_order", description="Tracks an order"),
-    Tool.from_function(func=add_item, name="add_item", description="Adds item to order")
+    Tool.from_function(name="cancel_order", func=cancel_order, description="Cancel a given order by order ID"),
+    Tool.from_function(name="track_order", func=track_order, description="Track a given order by order ID"),
+    Tool.from_function(name="add_item", func=add_item, description="Add an item to a given order")
 ]
 
-llm = ChatOpenAI(temperature=0)
+# ✅ Initialize LLM agent
+llm = ChatOpenAI(temperature=0, openai_api_key=st.secrets["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"])
 agent = initialize_agent(tools, llm, agent_type="zero-shot-react-description")
-retriever = RetrievalQA.from_chain_type(llm=llm, chain_type="stuff", retriever=db.as_retriever())
 
-def handle_query(q):
-    intent, oid = detect_intent(q)
-    if intent != "faq":
-        if intent == "add":
-            item = q.split("add")[-1].split("to order")[0].strip()
-            return add_item(oid, item)
-        return {"cancel":"cancel_order","track":"track_order"}[intent](oid)
-    return retriever.run(q)
+# ----------------------------
+# 🎯 Main entry: handle user input
+# ----------------------------
+
+def handle_query(user_input):
+    intent, order_id = detect_intent(user_input)
+    
+    if intent == "cancel":
+        return cancel_order(order_id)
+    elif intent == "track":
+        return track_order(order_id)
+    elif intent == "add":
+        # Extract item (simple pattern match or just assume fries)
+        item = "fries"
+        return add_item(order_id, item)
+    else:
+        # FAQ or unknown → use vector retriever
+        return retriever.run(user_input)
